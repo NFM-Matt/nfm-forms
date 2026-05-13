@@ -4,7 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>NFM Write Up Form</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// Load jsPDF dynamically to ensure it's ready
+(function() {
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  script.onload = function() { console.log('jsPDF loaded'); };
+  script.onerror = function() {
+    // Fallback CDN
+    var s2 = document.createElement('script');
+    s2.src = 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(script);
+})();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap');
 
@@ -1027,6 +1041,23 @@ function goToSection(idx) {
   document.querySelectorAll('.tab-btn')[currentSection].classList.add('active');
   window.scrollTo(0, 0);
   updateNav();
+  // Re-size signature canvas when Sign tab becomes visible
+  if (idx === 5) {
+    setTimeout(() => {
+      const canvas = document.getElementById('sigCanvas');
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0) {
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.strokeStyle = '#1a2540';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }, 100);
+  }
 }
 
 function nextSection() {
@@ -1089,6 +1120,10 @@ function showToast(msg) {
 
 // ─── PDF GENERATION ──────────────────────────────────────
 function generatePDF() {
+  if (!window.jspdf) {
+    showToast('PDF library not loaded. Please refresh and try again.');
+    return;
+  }
   showToast('Generating PDF...');
   setTimeout(() => {
     try {
