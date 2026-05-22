@@ -301,6 +301,7 @@
     color: var(--gray-dark);
   }
   .cond-btn:hover { border-color: var(--navy-light); }
+  .cond-btn.selected-NA { background: #f0f0f0; border-color: #999; color: #555; }
   .cond-btn.selected-O { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
   .cond-btn.selected-A { background: #fff8e1; border-color: #ffc107; color: #e65100; }
   .cond-btn.selected-R { background: #fff3e0; border-color: #ff9800; color: #e65100; }
@@ -551,13 +552,13 @@
 
   .section-intro {
     font-size: 13px;
-    color: var(--gray-dark);
     margin-bottom: 14px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     background: var(--navy);
     color: var(--white);
     border-radius: 6px;
     font-weight: 500;
+    border-left: 4px solid var(--gold);
   }
 
   @media (max-width: 400px) {
@@ -637,7 +638,7 @@
       <div class="field-group full">
         <div class="field">
           <label>VIN</label>
-          <input type="text" id="vin" placeholder="17-character VIN" maxlength="17" style="font-family:monospace;letter-spacing:1px;">
+          <input type="text" id="vin" placeholder="17-character VIN" maxlength="17" style="font-family:monospace;letter-spacing:1px;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
         </div>
       </div>
       <div class="field-group full">
@@ -855,7 +856,7 @@ function buildInspection(containerId, items, part) {
     div.innerHTML = `
       <div class="inspection-name">${item}</div>
       <div class="condition-row">
-        ${['O','A','R','S'].map(c => `<button class="cond-btn" data-part="${part}" data-idx="${i}" data-code="${c}" onclick="selectCode('${part}',${i},'${c}',this)">${c}</button>`).join('')}
+        ${['NA','O','A','R','S'].map(c => `<button class="cond-btn" data-part="${part}" data-idx="${i}" data-code="${c}" onclick="selectCode('${part}',${i},'${c}',this)">${c}</button>`).join('')}
       </div>
       <textarea class="inspection-comment" placeholder="Comments..." data-part="${part}" data-idx="${i}" oninput="updateComment('${part}',${i},this.value)"></textarea>
     `;
@@ -1319,6 +1320,7 @@ function doGeneratePDF() {
       doc.setTextColor(...white);
       doc.text('PART A', margin + 6, y + 12);
       doc.text('ITEM', margin + 80, y + 12);
+      doc.text('NA', W - margin - 120, y + 12);
       doc.text('O', W - margin - 100, y + 12);
       doc.text('A', W - margin - 80, y + 12);
       doc.text('R', W - margin - 60, y + 12);
@@ -1341,19 +1343,19 @@ function doGeneratePDF() {
         doc.text(item, margin + 6, y + 13);
 
         // Condition checkboxes
-        ['O','A','R','S'].forEach((code, ci) => {
-          const cx = W - margin - 100 + ci * 20;
+        ['NA','O','A','R','S'].forEach((code, ci) => {
+          const cx = W - margin - 120 + ci * 20;
           const cy = y + 10;
           doc.setDrawColor(180,190,210);
           doc.roundedRect(cx - 7, cy - 7, 14, 14, 2, 2, 'S');
           if (data.code === code) {
-            const colors = {O:[76,175,80],A:[255,193,7],R:[255,152,0],S:[244,67,54]};
+            const colors = {NA:[180,180,180],O:[76,175,80],A:[255,193,7],R:[255,152,0],S:[244,67,54]};
             doc.setFillColor(...colors[code]);
             doc.roundedRect(cx - 7, cy - 7, 14, 14, 2, 2, 'F');
-            doc.setFontSize(9);
+            doc.setFontSize(code === 'NA' ? 7 : 9);
             doc.setFont('helvetica','bold');
-            doc.setTextColor(...white);
-            doc.text(code, cx - 3, cy + 4);
+            doc.setTextColor(...(code === 'NA' ? [80,80,80] : white));
+            doc.text(code, code === 'NA' ? cx - 5 : cx - 3, cy + 4);
           }
         });
 
@@ -1396,19 +1398,19 @@ function doGeneratePDF() {
         doc.setTextColor(...textColor);
         doc.text(item, margin + 6, y + 13);
 
-        ['O','A','R','S'].forEach((code, ci) => {
-          const cx = W - margin - 100 + ci * 20;
+        ['NA','O','A','R','S'].forEach((code, ci) => {
+          const cx = W - margin - 120 + ci * 20;
           const cy = y + 10;
           doc.setDrawColor(180,190,210);
           doc.roundedRect(cx - 7, cy - 7, 14, 14, 2, 2, 'S');
           if (data.code === code) {
-            const colors = {O:[76,175,80],A:[255,193,7],R:[255,152,0],S:[244,67,54]};
+            const colors = {NA:[180,180,180],O:[76,175,80],A:[255,193,7],R:[255,152,0],S:[244,67,54]};
             doc.setFillColor(...colors[code]);
             doc.roundedRect(cx - 7, cy - 7, 14, 14, 2, 2, 'F');
-            doc.setFontSize(9);
+            doc.setFontSize(code === 'NA' ? 7 : 9);
             doc.setFont('helvetica','bold');
-            doc.setTextColor(...white);
-            doc.text(code, cx - 3, cy + 4);
+            doc.setTextColor(...(code === 'NA' ? [80,80,80] : white));
+            doc.text(code, code === 'NA' ? cx - 5 : cx - 3, cy + 4);
           }
         });
 
