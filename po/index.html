@@ -116,6 +116,15 @@
     background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%236A7385' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 14px center;background-size:12px;padding-right:38px}
   input:focus,select:focus{border-color:var(--navy);outline:none;box-shadow:0 0 0 3px rgba(19,35,71,.12)}
+  /* iOS gives date inputs their own intrinsic sizing that ignores width/box-sizing */
+  input[type="date"]{
+    -webkit-appearance:none;appearance:none;
+    display:block;min-width:0;max-width:100%;width:100%;
+    height:51px;line-height:normal;text-align:left;
+  }
+  input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
+  input[type="date"]::-webkit-datetime-edit{padding:0;text-align:left}
+  input[type="date"]::-webkit-calendar-picker-indicator{margin-left:auto}
   input.mono{font-family:var(--mono)}
   input.bad,select.bad{border-color:var(--crimson);background:#FEF6F7}
   .hint{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.4}
@@ -238,6 +247,12 @@
       <div class="hint">Combo means any combination of two or more, such as Parts plus Shop Supplies.</div>
       <div class="err" id="typeErr">Pick a purchase type.</div>
 
+      <div id="comboWrap" class="hidden">
+        <label for="comboInput">What was in the combo</label>
+        <input id="comboInput" type="text" placeholder="Parts + Shop Supplies" autocomplete="off">
+        <div class="err" id="comboErr">List what was included.</div>
+      </div>
+
       <label for="venInput">Vendor</label>
       <input id="venInput" type="text" placeholder="NAPA Greensboro" autocomplete="off">
       <div class="err" id="venErr">Enter the vendor.</div>
@@ -256,7 +271,7 @@
   </section>
 
   <div class="foot">
-    Numbers are stored on this phone.<br>Upload each PDF to your OneDrive RO folder along with the vendor receipt/invoice.
+    Numbers are stored on this phone.<br>Upload each PDF to your OneDrive PO folder.
   </div>
 </div>
 
@@ -327,7 +342,7 @@
       seq: seq,
       branchId: branchId || branch,
       invoiceDate: todayISO(),
-      ro: "", type: "", vendor: "", account: "", amount: "",
+      ro: "", type: "", combo: "", vendor: "", account: "", amount: "",
       status: "open",
       created: new Date().toISOString()
     };
@@ -503,13 +518,25 @@
   });
 
   /* ---------------- detail ---------------- */
-  var FIELDS = ["dateInput","roInput","typeInput","venInput","amtInput"];
+  var FIELDS = ["dateInput","roInput","typeInput","venInput","amtInput","comboInput"];
+
+  function syncCombo(){
+    var on = $("typeInput").value === "Combo";
+    $("comboWrap").classList.toggle("hidden", !on);
+    if(!on){
+      $("comboInput").classList.remove("bad");
+      $("comboErr").classList.remove("show");
+    }
+  }
+  $("typeInput").addEventListener("change", syncCombo);
 
   function openDetail(r){
     $("poNum").textContent = r.po;
     $("dateInput").value = r.invoiceDate || todayISO();
     $("roInput").value = r.ro || "";
     $("typeInput").value = r.type || "";
+    $("comboInput").value = r.combo || "";
+    syncCombo();
     $("venInput").value = r.vendor || "";
     $("acctInput").value = r.account || "";
     $("amtInput").value = r.amount || "";
@@ -575,6 +602,8 @@
     if(!dt){ flag("dateInput"); bad = true; }
     if(!ro){ flag("roInput"); bad = true; }
     if(!typ){ flag("typeInput"); bad = true; }
+    var combo = ($("comboInput").value||"").trim();
+    if(typ === "Combo" && !combo){ flag("comboInput"); bad = true; }
     if(!ven){ flag("venInput"); bad = true; }
     if(amt === null){ flag("amtInput"); bad = true; }
     if(bad){ toast("Fill in the missing fields"); return; }
@@ -582,6 +611,7 @@
     current.invoiceDate = dt;
     current.ro = ro;
     current.type = typ;
+    current.combo = (typ === "Combo") ? combo : "";
     current.vendor = ven;
     current.account = ($("acctInput").value||"").trim();
     current.amount = amt;
@@ -652,7 +682,7 @@
       field("Branch", r.branchId || String(r.po).split("-")[0]);
       field("Invoice date", prettyISO(r.invoiceDate));
       field("RO number", r.ro);
-      field("Purchase type", r.type);
+      field("Purchase type", r.type + (r.combo ? "  (" + r.combo + ")" : ""));
       field("Vendor", r.vendor);
       if(r.account) field("Vendor account number", r.account);
       field("Amount", "$" + r.amount);
