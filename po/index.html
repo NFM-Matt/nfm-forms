@@ -128,6 +128,12 @@
   input.mono{font-family:var(--mono)}
   input.bad,select.bad{border-color:var(--crimson);background:#FEF6F7}
   .hint{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.4}
+  .linkbtn{
+    background:none;border:0;padding:1px 0;margin:0;font-family:var(--mono);
+    font-size:15px;font-weight:700;color:var(--crimson);cursor:pointer;
+    text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px;
+  }
+  .linkbtn:active{opacity:.55}
   .err{font-size:13px;color:var(--crimson);margin-top:6px;font-weight:600;display:none}
   .err.show{display:block}
 
@@ -186,7 +192,7 @@
     <label for="brInput">Branch ID</label>
     <input id="brInput" class="mono" type="text" placeholder="MB-002" maxlength="12" autocomplete="off" autocapitalize="characters">
     <div class="err" id="brErr">Enter your branch ID, for example MB-002.</div>
-    <div class="hint">Enter it the way it appears in Karmak. Your PO numbers use the three digit branch number, so MB-002 gives 002-1.</div>
+    <div class="hint">Type it any way you like. MB-002, 002 and 2 all come out the same. Your PO numbers use just the branch digits, so this one gives 002-1.</div>
 
     <label for="lastInput">Last PO number used <span class="opt">(if any)</span></label>
     <input id="lastInput" class="mono" type="text" inputmode="numeric" placeholder="Leave blank to start at 1" autocomplete="off">
@@ -259,6 +265,7 @@
 
       <label for="acctInput">Vendor account number <span class="opt">(if known)</span></label>
       <input id="acctInput" class="mono" type="text" placeholder="Optional" autocomplete="off">
+      <div class="hint">NAPA account for Mobile: <button type="button" class="linkbtn" id="napaBtn">89626</button> (tap to fill)</div>
 
       <label for="amtInput">Amount</label>
       <input id="amtInput" class="mono" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
@@ -299,7 +306,7 @@
   /* ---------------- storage ---------------- */
   function load(){
     try{ branch = localStorage.getItem(K_BR) || null; }catch(e){ branch = null; }
-    try{ branchId = localStorage.getItem(K_BRID) || branch; }catch(e){ branchId = branch; }
+    branchId = branch ? ("MB-" + branch) : null;
     try{ baseline = parseInt(localStorage.getItem(K_BASE),10) || 0; }catch(e){ baseline = 0; }
     try{ records = JSON.parse(localStorage.getItem(K_REC) || "[]"); }catch(e){ records = []; }
     if(!Array.isArray(records)) records = [];
@@ -394,7 +401,7 @@
       $("brInput").classList.add("bad");
       return;
     }
-    var num = digits[1];
+    var num = String(parseInt(digits[1], 10) || 0);
     while(num.length < 3) num = "0" + num;
 
     // accepts "142-37" or just "37"
@@ -415,7 +422,7 @@
     }
 
     branch = num;
-    branchId = entered;
+    branchId = "MB-" + num;
     baseline = n;
     try{
       localStorage.setItem(K_BR, branch);
@@ -580,6 +587,12 @@
     document.body.removeChild(ta);
   }
 
+  var NAPA_ACCT = "89626";
+  $("napaBtn").addEventListener("click", function(){
+    $("acctInput").value = NAPA_ACCT;
+    toast("NAPA account filled in");
+  });
+
   function money(v){
     var n = parseFloat(String(v).replace(/[^0-9.\-]/g,""));
     if(isNaN(n)) return null;
@@ -679,7 +692,7 @@
         y += 56;
       }
 
-      field("Branch", r.branchId || String(r.po).split("-")[0]);
+      field("Branch", "MB-" + String(r.po).split("-")[0]);
       field("Invoice date", prettyISO(r.invoiceDate));
       field("RO number", r.ro);
       field("Purchase type", r.type + (r.combo ? "  (" + r.combo + ")" : ""));
@@ -706,4 +719,4 @@
 })();
 </script>
 </body>
-</html>  
+</html>
